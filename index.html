@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cheza Social</title>
+
+  <!-- ✅ Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-database-compat.js"></script>
+
+  <!-- ✅ Stylesheet -->
+  <link rel="stylesheet" href="secondstyle.css" />
+</head>
+<body>
+  <!-- 🔐 AUTH SECTION -->
+  <div id="auth-section">
+    <div id="login-form" class="form">
+      <h2>Login</h2>
+      <input type="email" id="login-email" placeholder="Email" />
+      <input type="password" id="login-password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p>Simunapange account? <span onclick="toggleForm()">Register</span></p>
+    </div>
+
+    <div id="register-form" class="form hidden">
+      <h2>Register</h2>
+      <input type="text" id="first-name" placeholder="First Name" />
+      <input type="text" id="last-name" placeholder="Last Name" />
+      <input type="email" id="register-email" placeholder="Email" />
+      <input type="text" id="phone" placeholder="Phone Number" />
+      <select id="country">
+        <option value="">Select Country</option>
+        <option value="Malawi">Malawi</option>
+        <option value="Zambia">Zambia</option>
+      </select>
+      <select id="gender">
+        <option value="">Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      <input type="password" id="register-password" placeholder="Password" />
+      <button onclick="register()">Register</button>
+      <p>Mulibe account kale? <span onclick="toggleForm()">Login</span></p>
+    </div>
+  </div>
+
+  <!-- 🏠 DASHBOARD -->
+  <div id="dashboard" class="hidden">
+    <div class="top-bar">
+      <div class="tabs">
+        <button onclick="showSection('public')">Public</button>
+        <button onclick="showSection('privet')">Privet</button>
+      </div>
+      <div id="notification-icon" onclick="openNotifications()">🔔<span id="notif-count">0</span></div>
+    </div>
+
+    <!-- 🔔 NOTIFICATIONS -->
+    <div id="notification-panel" class="hidden">
+      <h3>Notifications</h3>
+      <ul id="notif-list"></ul>
+      <button onclick="closeNotifications()">Close</button>
+    </div>
+
+    <!-- 🌍 PUBLIC SECTION -->
+    <div id="public-section" class="hidden">
+      <div id="posts-container"></div>
+      <div class="post-box">
+        <textarea id="post-content" placeholder="Lemba nkhani..."></textarea>
+        <button onclick="createPost()">Post</button>
+      </div>
+    </div>
+
+    <!-- 🔒 PRIVET SECTION -->
+    <div id="privet-section" class="hidden">
+      <h3>Send Message</h3>
+      <div id="user-list"></div>
+    </div>
+
+    <!-- 💬 MESSAGE BOX -->
+    <div id="message-box" class="hidden">
+      <button onclick="closeChat()">⬅️ Back</button>
+      <h4 id="chat-with"></h4>
+      <textarea id="message-input" placeholder="Lemba message..."></textarea>
+      <button onclick="sendMessage()">Tumiza</button>
+      <div id="chat-messages"></div>
+    </div>
+  </div>
+
+  <!-- ✅ Main Script -->
+  <script src="javascript.js"></script>
+</body>
+</html>
