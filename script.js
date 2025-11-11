@@ -261,87 +261,191 @@ function loadReplies(postId, commentId) {
     list.appendChild(div);
   });
 }
-
+  
+   // 🔍 Kuwonetsa mndandanda wa ma users
 function loadUsers() {
-    db.collection("users").get().then(snapshot => {
-      const list = document.getElementById("user-list");
-      list.innerHTML = "";
-      snapshot.forEach(doc => {
-        const user = doc.data();
-        const div = document.createElement("div");
-        div.textContent = `${user.firstName} ${user.lastName}`;
-        div.onclick = () => openChat(doc.id, `${user.firstName} ${user.lastName}`);
-        list.appendChild(div);
+  db.collection("users").get().then(snapshot => {
+    const list = document.getElementById("user-list");
+    list.innerHTML = "";
+    snapshot.forEach(doc => {
+      const user = doc.data();
+      const div = document.createElement("div");
+      div.textContent = `${user.firstName} ${user.lastName}`;
+      div.onclick = () => openChat(doc.id, `${user.firstName} ${user.lastName}`);
+      list.appendChild(div);
+    });
+  });
+}
+
+// 💬 Kutsegula chat
+function openChat(uid, name) {
+  currentChatUser = uid;
+  document.getElementById("chat-with").textContent = `Chating With ${name}`;
+  const box = document.getElementById("message-box");
+  box.classList.remove("hidden");
+
+  // 📦 Malo a ma message
+  const messages = document.getElementById("chat-messages");
+  messages.style = `
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:10px 10px 70px; /* malo a pansi kuti bar isaphimbe */
+    overflow-y:scroll;
+    max-height:70vh;
+  `;
+
+  // ✍️ Textarea yomwe ilipo kale (ikhale yokhazikika pansi)
+  const input = document.getElementById("message-input");
+  input.style = `
+    position:fixed;
+    bottom:0;
+    left:0;
+    right:500px;
+    height:42px;
+    resize:none;
+    padding:6px;
+    border-top:1px solid #ccc;
+    background:#fff;
+    z-index:100;
+  `;
+
+  // ✅ Button ya Tumiza yomwe ilipo kale (ikhale yokhazikika pansi)
+  const sendBtn = box.querySelector("button[onclick='sendMessage()']");
+  sendBtn.textContent = "Tumiza";
+  sendBtn.style = `
+    position:fixed;
+    bottom: 0;
+    right:80px;
+    width:80px;
+    height:42px;
+    background:#22c55e;
+    color:#fff;
+    border:none;
+    font-weight:600;
+    z-index:101;
+  `;
+
+  // 🗑️ Onjezani Clear button yokhazikika pansi ngati ilibe
+  if (!document.getElementById("clear-btn")) {
+    const clearBtn = document.createElement("button");
+    clearBtn.id = "clear-btn";
+    clearBtn.textContent = "Chotsa";
+    clearBtn.style = `
+      position:fixed;
+      bottom:0;
+      right:0;
+      width:80px;
+      height:42px;
+      background:#ef4444;
+      color:#fff;
+      border:none;
+      font-weight:600;
+      z-index:102;
+    `;
+    clearBtn.onclick = clearChat;
+    document.body.appendChild(clearBtn);
+  }
+
+  loadMessages();
+}
+
+// ❌ Kutseka chat
+window.closeChat = function () {
+  document.getElementById("message-box").classList.add("hidden");
+  const clearBtn = document.getElementById("clear-btn");
+  if (clearBtn) clearBtn.remove();
+};
+
+// 📤 Kutumiza message
+window.sendMessage = function () {
+  const input = document.getElementById("message-input");
+  const message = (input.value || "").trim();
+  const sender = auth.currentUser?.uid;
+  const receiver = currentChatUser;
+  if (!message || !sender || !receiver) return;
+
+  const chatId = [sender, receiver].sort().join("_");
+  const chatRef = rtdb.ref(`messages/${chatId}`);
+
+  chatRef.push({
+    from: sender,
+    to: receiver,
+    message,
+    timestamp: Date.now()
+  }).then(() => {
+    input.value = ""; // yeretsani textarea
+
+    db.collection("users").doc(sender).get().then(doc => {
+      const d = doc.data();
+      const senderName = (d.firstName || "") + " " + (d.lastName || "");
+      rtdb.ref(`notifications/${receiver}`).push({
+        from: sender,
+        name: senderName,
+        message,
+        type: "message",
+        timestamp: Date.now()
       });
     });
-  }
+  });
+};
 
-  function openChat(uid, name) {
-    currentChatUser = uid;
-    document.getElementById("chat-with").textContent = `Chat with ${name}`;
-    document.getElementById("message-box").classList.remove("hidden");
-    loadMessages();
-  }
+// 📥 Kuwonetsa ma message
+function loadMessages() {
+  const sender = auth.currentUser.uid;
+  const receiver = currentChatUser;
+  const chatId = [sender, receiver].sort().join("_");
+  const chatRef = rtdb.ref(`messages/${chatId}`);
 
-  window.closeChat = function () {
-    document.getElementById("message-box").classList.add("hidden");
-  };
+  chatRef.off(); // pewani duplicate listeners
+  chatRef.on("value", snapshot => {
+    const container = document.getElementById("chat-messages");
+    container.innerHTML = "";
 
-  window.sendMessage = function () {
-    const message = document.getElementById("message-input").value;
-    const sender = auth.currentUser?.uid;
-    const receiver = currentChatUser;
-    if (!message || !sender || !receiver) return;
+    snapshot.forEach(child => {
+      const msg = child.val();
+      const bubble = document.createElement("div");
 
-    const chatId = [sender, receiver].sort().join("_");
-    const chatRef = rtdb.ref(`messages/${chatId}`);
+      if (msg.from === sender) {
+        bubble.style = "align-self:flex-end;background:#dcf8c6;padding:8px 10px;margin:2px 0;border-radius:12px;max-width:78%;";
+      } else {
+        bubble.style = "align-self:flex-start;background:#ffffff;padding:8px 10px;margin:2px 0;border-radius:12px;max-width:78%;box-shadow:0 1px 1px rgba(0,0,0,0.06);";
+      }
 
-    chatRef.push({
-      from: sender,
-      to: receiver,
-      message,
-      timestamp: Date.now()
-    }).then(() => {
-      document.getElementById("message-input").value = "";
-
-      db.collection("users").doc(sender).get().then(doc => {
-        const senderName = doc.data().firstName + " " + doc.data().lastName;
-        rtdb.ref(`notifications/${receiver}`).push({
-          from: sender,
-          name: senderName,
-          message,
-          type: "message",
-          timestamp: Date.now()
-        });
-      });
+      bubble.textContent = msg.message;
+      container.appendChild(bubble);
     });
-  };
 
-  function loadMessages() {
-    const sender = auth.currentUser.uid;
-    const receiver = currentChatUser;
-    const chatId = [sender, receiver].sort().join("_");
-    const chatRef = rtdb.ref(`messages/${chatId}`);
-    chatRef.on("value", snapshot => {
-      const container = document.getElementById("chat-messages");
-      container.innerHTML = "";
-      snapshot.forEach(child => {
-        const msg = child.val();
-        const div = document.createElement("div");
-        div.textContent = msg.message;
-        container.appendChild(div);
-      });
-    });
-  }
+    container.scrollTop = container.scrollHeight;
+  });
+}
 
-  function listenNotifications() {
-    const uid = auth.currentUser.uid;
-    const notifRef = rtdb.ref(`notifications/${uid}`);
-    notifRef.on("value", snapshot => {
-      const count = snapshot.numChildren();
-      document.getElementById("notif-count").textContent = count;
-    });
-  }
+// 🧹 Chotsa ma message onse
+window.clearChat = function () {
+  const sender = auth.currentUser?.uid;
+  const receiver = currentChatUser;
+  if (!sender || !receiver) return;
+
+  const chatId = [sender, receiver].sort().join("_");
+  if (!confirm("Mukufuna kuchotsa ma message onse mu chat iyi?")) return;
+
+  rtdb.ref(`messages/${chatId}`).remove().then(() => {
+    const container = document.getElementById("chat-messages");
+    if (container) container.innerHTML = "";
+    alert("Chat clear Successful ✅");
+  });
+};
+
+// 🔔 Kuwerengera ma notification
+function listenNotifications() {
+  const uid = auth.currentUser.uid;
+  const notifRef = rtdb.ref(`notifications/${uid}`);
+  notifRef.on("value", snapshot => {
+    const count = snapshot.numChildren();
+    const el = document.getElementById("notif-count");
+    if (el) el.textContent = count;
+  });
+}
 
   window.openNotifications = function () {
   const uid = auth.currentUser.uid;
@@ -407,4 +511,3 @@ function loadUsers() {
     document.getElementById("notification-panel").classList.add("hidden");
   };
 });
-
