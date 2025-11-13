@@ -64,13 +64,11 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("message-box").classList.add("hidden");
     document.getElementById(`${section}-section`).classList.remove("hidden");
   };
-  
-// ====================== CREATE POST ======================
+
+  // ====================== CREATE POST ======================
 window.createPost = function () {
   const uid = auth.currentUser.uid;
-  const contentEl = document.getElementById("post-content");
-  if (!contentEl) return;
-  const content = contentEl.value;
+  const content = document.getElementById("post-content").value.trim();
   if (!content) return;
 
   db.collection("users").doc(uid).get().then(doc => {
@@ -84,7 +82,7 @@ window.createPost = function () {
       likes: 0,
       timestamp: Date.now()
     });
-    contentEl.value = "";
+    document.getElementById("post-content").value = "";
   });
 };
 
@@ -93,40 +91,53 @@ function loadPosts() {
   const container = document.getElementById("posts-container");
   container.innerHTML = "";
 
-  // ✅ Gwiritsani ntchito child_added kuti post yatsopano iwonetsedwe pompo
-  rtdb.ref("posts").orderByChild("timestamp").on("child_added", snapshot => {
-    const post = { id: snapshot.key, ...snapshot.val() };
-    const div = document.createElement("div");
-    const preview = post.content.length > 100
-      ? post.content.substring(0, 100) + "..."
-      : post.content;
-
-    div.innerHTML = `
-      <p><strong>${post.authorName || "Anonymous"}</strong></p>
-      <p>${preview}</p>
-      ${post.content.length > 100 ? `<button onclick="viewFullPost('${post.id}')">See more</button>` : ""}
-      <div style="display:flex; gap:6px; margin-top:6px;">
-        <button id="like-btn-${post.id}" style="flex:1;" onclick="likePost('${post.id}')">❤️ (${post.likes || 0})</button>
-        <button id="comment-btn-${post.id}" style="flex:1;" onclick="openCommentView('${post.id}')">💬 (0)</button>
-      </div>
-    `;
-    container.prepend(div);
-
-    // ✅ Listener pa likes
-    rtdb.ref(`posts/${post.id}/likes`).on("value", snapLikes => {
-      const btn = document.getElementById(`like-btn-${post.id}`);
-      if (btn) btn.textContent = `❤️ (${snapLikes.val() || 0})`;
+  rtdb.ref("posts").orderByChild("timestamp").on("value", snapshot => {
+    const posts = [];
+    snapshot.forEach(child => {
+      posts.unshift({ id: child.key, ...child.val() });
     });
 
-    // ✅ Listener pa comments count
-    rtdb.ref(`posts/${post.id}/comments`).on("value", snapComments => {
-      const btn = document.getElementById(`comment-btn-${post.id}`);
-      if (btn) btn.textContent = `💬 (${snapComments.numChildren()})`;
+    container.innerHTML = "";
+
+    posts.forEach(post => {
+      const div = document.createElement("div");
+
+      // ✅ Sungani line breaks & ma link mu post content
+      let preview = post.content;
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      preview = preview.replace(urlRegex, url => `<a href="${url}" target="_blank" style="color:#2563eb;text-decoration:underline;">${url}</a>`);
+
+      if (post.content.length > 100) {
+        preview = post.content.substring(0, 100) + "...";
+      }
+
+      div.innerHTML = `
+        <p><strong>${post.authorName || "Anonymous"}</strong></p>
+        <p style="white-space:pre-wrap;">${preview}</p>
+        ${post.content.length > 100 ? `<button onclick="viewFullPost('${post.id}')">See more</button>` : ""}
+        <div style="display:flex; gap:6px; margin-top:6px;">
+          <button id="like-btn-${post.id}" style="flex:1;" onclick="likePost('${post.id}')">❤️ (${post.likes || 0})</button>
+          <button id="comment-btn-${post.id}" style="flex:1;" onclick="openCommentView('${post.id}')">💬 (0)</button>
+        </div>
+      `;
+      container.appendChild(div);
+
+      // ✅ Listener pa likes
+      rtdb.ref(`posts/${post.id}/likes`).on("value", snapLikes => {
+        const btn = document.getElementById(`like-btn-${post.id}`);
+        if (btn) btn.textContent = `❤️ (${snapLikes.val() || 0})`;
+      });
+
+      // ✅ Listener pa comments (counter imasinthika pompo)
+      rtdb.ref(`posts/${post.id}/comments`).on("value", snapComments => {
+        const btn = document.getElementById(`comment-btn-${post.id}`);
+        if (btn) btn.textContent = `💬 (${snapComments.numChildren()})`;
+      });
     });
   });
 }
 
-// ====================== VIEW FULL POST ======================
+  // ====================== VIEW FULL POST ======================
 window.viewFullPost = function (postId) {
   rtdb.ref(`posts/${postId}`).once("value", snapshot => {
     const post = snapshot.val();
@@ -147,24 +158,27 @@ window.goBackToPosts = function () {
   // ✅ Bwezerani ma posts onse
   loadPosts();
 };
-
-// ====================== LIKE POST ======================
+  
+  // ====================== LIKE POST ======================
 window.likePost = function (postId) {
   const likeRef = rtdb.ref(`posts/${postId}/likes`);
   likeRef.transaction(current => (current || 0) + 1);
 };
-
+  
 // ====================== COMMENTS ======================
 window.openCommentView = function (postId) {
   const panel = document.createElement("div");
   panel.id = "comment-panel";
-  panel.style = "position:fixed;top:0;left:0;right:0;bottom:0;background:#f0f9ff;z-index:20;padding:15px;overflow:auto;";
+  panel.style = "position:fixed;top:0;left:0;right:0;bottom:0;background:#f0f9ff;z-index:20;display:flex;flex-direction:column;";
+
   panel.innerHTML = `
     <button onclick="closeCommentView()">⬅️ Back to Posts</button>
-    <h3>Comments</h3>
-    <div id="comment-list-${postId}"></div>
-    <input type="text" id="comment-input-${postId}" placeholder="Lemba comment..." />
-    <button onclick="addComment('${postId}')">Tumiza Comment</button>
+    <h3>Comments (<span id="comment-count-${postId}">0</span>)</h3>
+    <div id="comment-list-${postId}" style="flex:1;overflow-y:auto;padding-bottom:60px;"></div>
+    <div style="position:fixed;bottom:0;left:0;right:0;display:flex;border-top:1px solid #ccc;background:#fff;padding:6px;">
+      <textarea id="comment-input-${postId}" placeholder="Lemba comment..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
+      <button onclick="addComment('${postId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">Tumiza</button>
+    </div>
   `;
   document.body.appendChild(panel);
   loadComments(postId);
@@ -177,22 +191,39 @@ window.closeCommentView = function () {
 
 function loadComments(postId) {
   const list = document.getElementById(`comment-list-${postId}`);
-  rtdb.ref(`posts/${postId}/comments`).on("child_added", snapshot => {
-    const comment = snapshot.val();
-    const commentId = snapshot.key;
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p><strong>${comment.authorName || "Anonymous"}</strong></p>
-      <p>${comment.text}</p>
-      <button onclick="openReplyView('${postId}','${commentId}')">↩️ Replies</button>
-    `;
-    list.appendChild(div);
+  const commentsRef = rtdb.ref(`posts/${postId}/comments`);
+
+  commentsRef.off();
+  commentsRef.on("value", snapshot => {
+    list.innerHTML = "";
+    let count = 0;
+
+    snapshot.forEach(child => {
+      const comment = child.val();
+      const commentId = child.key;
+      count++;
+
+      let text = comment.text;
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      text = text.replace(urlRegex, url => `<a href="${url}" target="_blank" style="color:#2563eb;text-decoration:underline;">${url}</a>`);
+
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <p><strong>${comment.authorName || "Anonymous"}</strong></p>
+        <p style="white-space:pre-wrap;">${text}</p>
+        <button onclick="openReplyView('${postId}','${commentId}')">↩️ Replies</button>
+      `;
+      list.appendChild(div);
+    });
+
+    const counterEl = document.getElementById(`comment-count-${postId}`);
+    if (counterEl) counterEl.textContent = count;
   });
 }
 
 window.addComment = function (postId) {
   const input = document.getElementById(`comment-input-${postId}`);
-  const text = input.value;
+  const text = input.value.trim();
   const user = auth.currentUser;
   if (!text || !user) return;
 
@@ -211,7 +242,7 @@ window.addComment = function (postId) {
 // ====================== REPLIES ======================
 window.addReply = function (postId, commentId) {
   const input = document.getElementById(`reply-input-${commentId}`);
-  const text = input.value;
+  const text = input.value.trim();
   const user = auth.currentUser;
   if (!text || !user) return;
 
@@ -231,13 +262,16 @@ window.addReply = function (postId, commentId) {
 window.openReplyView = function (postId, commentId) {
   const panel = document.createElement("div");
   panel.id = "reply-panel";
-  panel.style = "position:fixed;top:0;left:0;right:0;bottom:0;background:#f0f9ff;z-index:30;padding:15px;overflow:auto;";
+  panel.style = "position:fixed;top:0;left:0;right:0;bottom:0;background:#f0f9ff;z-index:30;display:flex;flex-direction:column;";
+
   panel.innerHTML = `
     <button onclick="closeReplyView('${postId}')">⬅️ Back to Comments</button>
     <h4>Replies</h4>
-    <div id="reply-list-${commentId}"></div>
-    <input type="text" id="reply-input-${commentId}" placeholder="Lemba reply..." />
-    <button onclick="addReply('${postId}','${commentId}')">Tumiza Reply</button>
+    <div id="reply-list-${commentId}" style="flex:1;overflow-y:auto;padding-bottom:60px;"></div>
+    <div style="position:fixed;bottom:0;left:0;right:0;display:flex;border-top:1px solid #ccc;background:#fff;padding:6px;">
+      <textarea id="reply-input-${commentId}" placeholder="Lemba reply..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
+      <button onclick="addReply('${postId}','${commentId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">Tumiza</button>
+    </div>
   `;
   document.body.appendChild(panel);
   loadReplies(postId, commentId);
@@ -251,17 +285,33 @@ window.closeReplyView = function (postId) {
 
 function loadReplies(postId, commentId) {
   const list = document.getElementById(`reply-list-${commentId}`);
-  rtdb.ref(`posts/${postId}/comments/${commentId}/replies`).on("child_added", snapshot => {
-    const reply = snapshot.val();
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p><strong>${reply.authorName || "Anonymous"}</strong></p>
-      <p>${reply.text}</p>
-    `;
-    list.appendChild(div);
+  const repliesRef = rtdb.ref(`posts/${postId}/comments/${commentId}/replies`);
+
+  repliesRef.off();
+  repliesRef.on("value", snapshot => {
+    list.innerHTML = "";
+    snapshot.forEach(child => {
+      const reply = child.val();
+
+      // ✅ Sungani line breaks & ma link
+      let text = reply.text;
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      text = text.replace(
+        urlRegex,
+        url =>
+          `<a href="${url}" target="_blank" style="color:#2563eb;text-decoration:underline;">${url}</a>`
+      );
+
+      const div = document.createElement("div");
+      div.innerHTML = `
+        <p><strong>${reply.authorName || "Anonymous"}</strong></p>
+        <p style="white-space:pre-wrap;">${text}</p>
+      `;
+      list.appendChild(div);
+    });
   });
 }
-  
+
    // 🔍 Kuwonetsa mndandanda wa ma users
 function loadUsers() {
   db.collection("users").get().then(snapshot => {
@@ -280,9 +330,28 @@ function loadUsers() {
 // 💬 Kutsegula chat
 function openChat(uid, name) {
   currentChatUser = uid;
-  document.getElementById("chat-with").textContent = `Chating With ${name}`;
   const box = document.getElementById("message-box");
   box.classList.remove("hidden");
+
+  // Header bar pamwamba: Back + Clear + dzina
+  const backBtn = box.querySelector("button[onclick='closeChat()']");
+  if (!box.querySelector("#clear-btn")) {
+    const clearBtn = document.createElement("button");
+    clearBtn.id = "clear-btn";
+    clearBtn.textContent = "Chotsa";
+    clearBtn.style = `
+      margin-left:8px;
+      background:#ef4444;
+      color:#fff;
+      border:none;
+      font-weight:600;
+      padding:6px 10px;
+    `;
+    clearBtn.onclick = clearChat;
+    backBtn.after(clearBtn); // ikani pafupi ndi Back button pamwamba penipeni
+  }
+
+  document.getElementById("chat-with").textContent = `Mukuyankhula ndi ${name}`;
 
   // 📦 Malo a ma message
   const messages = document.getElementById("chat-messages");
@@ -291,17 +360,17 @@ function openChat(uid, name) {
     flex-direction:column;
     gap:6px;
     padding:10px 10px 70px; /* malo a pansi kuti bar isaphimbe */
-    overflow-y:scroll;
+    overflow:auto;
     max-height:70vh;
   `;
 
-  // ✍️ Textarea yomwe ilipo kale (ikhale yokhazikika pansi)
+  // ✍️ Textarea pansi pa screen, osafika mbali zonse
   const input = document.getElementById("message-input");
   input.style = `
     position:fixed;
     bottom:0;
     left:0;
-    right:500px;
+    width:calc(100% - 100px); /* siyani malo a Send button */
     height:42px;
     resize:none;
     padding:6px;
@@ -310,14 +379,14 @@ function openChat(uid, name) {
     z-index:100;
   `;
 
-  // ✅ Button ya Tumiza yomwe ilipo kale (ikhale yokhazikika pansi)
+  // ✅ Send button pansi pa screen, pafupi ndi textarea
   const sendBtn = box.querySelector("button[onclick='sendMessage()']");
   sendBtn.textContent = "Tumiza";
   sendBtn.style = `
     position:fixed;
-    bottom: 0;
-    right:80px;
-    width:80px;
+    bottom:0;
+    right:0;
+    width:100px;
     height:42px;
     background:#22c55e;
     color:#fff;
@@ -325,27 +394,6 @@ function openChat(uid, name) {
     font-weight:600;
     z-index:101;
   `;
-
-  // 🗑️ Onjezani Clear button yokhazikika pansi ngati ilibe
-  if (!document.getElementById("clear-btn")) {
-    const clearBtn = document.createElement("button");
-    clearBtn.id = "clear-btn";
-    clearBtn.textContent = "Chotsa";
-    clearBtn.style = `
-      position:fixed;
-      bottom:0;
-      right:0;
-      width:80px;
-      height:42px;
-      background:#ef4444;
-      color:#fff;
-      border:none;
-      font-weight:600;
-      z-index:102;
-    `;
-    clearBtn.onclick = clearChat;
-    document.body.appendChild(clearBtn);
-  }
 
   loadMessages();
 }
@@ -390,30 +438,38 @@ window.sendMessage = function () {
   });
 };
 
-// 📥 Kuwonetsa ma message
 function loadMessages() {
   const sender = auth.currentUser.uid;
   const receiver = currentChatUser;
   const chatId = [sender, receiver].sort().join("_");
   const chatRef = rtdb.ref(`messages/${chatId}`);
 
-  chatRef.off(); // pewani duplicate listeners
+  chatRef.off();
   chatRef.on("value", snapshot => {
     const container = document.getElementById("chat-messages");
     container.innerHTML = "";
 
     snapshot.forEach(child => {
       const msg = child.val();
+
+      // Row container
+      const row = document.createElement("div");
+      row.className = (msg.from === sender) ? "row sent" : "row received";
+
+      // Bubble
       const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      
+      // ✅ Text processing: ma link azikhala clickable
+      let text = msg.message;
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      text = text.replace(urlRegex, url => 
+        `<a href="${url}" target="_blank">${url}</a>`
+      );
 
-      if (msg.from === sender) {
-        bubble.style = "align-self:flex-end;background:#dcf8c6;padding:8px 10px;margin:2px 0;border-radius:12px;max-width:78%;";
-      } else {
-        bubble.style = "align-self:flex-start;background:#ffffff;padding:8px 10px;margin:2px 0;border-radius:12px;max-width:78%;box-shadow:0 1px 1px rgba(0,0,0,0.06);";
-      }
-
-      bubble.textContent = msg.message;
-      container.appendChild(bubble);
+      bubble.innerHTML = text;
+      row.appendChild(bubble);
+      container.appendChild(row);
     });
 
     container.scrollTop = container.scrollHeight;
@@ -432,7 +488,7 @@ window.clearChat = function () {
   rtdb.ref(`messages/${chatId}`).remove().then(() => {
     const container = document.getElementById("chat-messages");
     if (container) container.innerHTML = "";
-    alert("Chat clear Successful ✅");
+    alert("Chat yachotsedwa bwino ✅");
   });
 };
 
