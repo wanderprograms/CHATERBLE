@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cheza Social</title>
+  <title>LOVE AND FRIENDSHIP</title>
 
   <!-- ✅ Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.5.0/firebase-app-compat.js"></script>
@@ -15,6 +15,11 @@
   <link rel="stylesheet" href="secondstyle.css" />
 </head>
 <body>
+ <!-- Logo Above Menu -->
+    <div class="logoAboveMenu">
+      <img src="images/logo.png" alt="Logo"> <!-- Small logo above menu -->                                       
+    </div>
+  
   <!-- 🔐 AUTH SECTION -->
   <div id="auth-section">
     <div id="login-form" class="form">
@@ -52,7 +57,7 @@
     <div class="top-bar">
       <div class="tabs">
         <button onclick="showSection('public')">Public</button>
-        <button onclick="showSection('privet')">Privet</button>
+        <button onclick="showSection('privet')">Privet</button>        
       </div>
       <div id="notification-icon" onclick="openNotifications()">🔔<span id="notif-count">0</span></div>
     </div>
@@ -73,11 +78,11 @@
       </div>
     </div>
 
-    <!-- 🔒 PRIVET SECTION -->
+   <!-- 🔒 PRIVET SECTION -->
     <div id="privet-section" class="hidden">
       <h3>Send Message</h3>
       <div id="user-list"></div>
-    </div>
+    </div>   
 
     <!-- 💬 MESSAGE BOX -->
     <div id="message-box" class="hidden">
@@ -88,6 +93,13 @@
       <div id="chat-messages"></div>
     </div>
   </div>
+   <div id="copyright-message" class="copyright-box">
+ copyright &copy; 2025 WANDERSLAPP. Secure and reliable in all online operations.<br>       
+       WANDERSLAPP. Trusted and protected across all internet services.   <strong>see our</strong><a href="myupdate.html" target="_blank" class="social-link">    
+    <span>privacy.</span></a>&<a href="index12.html" target="_blank" class="social-link">    
+    <span>policy.</span></a>      
+   </div>
+</div>	
 
   <!-- ✅ Main Script -->
   <script src="script.js"></script>
