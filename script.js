@@ -177,7 +177,7 @@ window.openCommentView = function (postId) {
     <div id="comment-list-${postId}" style="flex:1;overflow-y:auto;padding-bottom:60px;"></div>
     <div style="position:fixed;bottom:0;left:0;right:0;display:flex;border-top:1px solid #ccc;background:#fff;padding:6px;">
       <textarea id="comment-input-${postId}" placeholder=" comment..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
-      <button onclick="addComment('${postId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">↗️</button>
+      <button onclick="addComment('${postId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">Send ↗️</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -270,7 +270,7 @@ window.openReplyView = function (postId, commentId) {
     <div id="reply-list-${commentId}" style="flex:1;overflow-y:auto;padding-bottom:60px;"></div>
     <div style="position:fixed;bottom:0;left:0;right:0;display:flex;border-top:1px solid #ccc;background:#fff;padding:6px;">
       <textarea id="reply-input-${commentId}" placeholder=" reply..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
-      <button onclick="addReply('${postId}','${commentId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">↗️</button>
+      <button onclick="addReply('${postId}','${commentId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">Send  ↗️</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -338,9 +338,9 @@ function openChat(uid, name) {
   if (!box.querySelector("#clear-btn")) {
     const clearBtn = document.createElement("button");
     clearBtn.id = "clear-btn";
-    clearBtn.textContent = "Chotsa";
+    clearBtn.textContent = "delete all messages";
     clearBtn.style = `
-      margin-left:8px;
+      margin-left:20px;
       background:#ef4444;
       color:#fff;
       border:none;
@@ -351,7 +351,7 @@ function openChat(uid, name) {
     backBtn.after(clearBtn); // ikani pafupi ndi Back button pamwamba penipeni
   }
 
-  document.getElementById("chat-with").textContent = `Mukuyankhula ndi ${name}`;
+  document.getElementById("chat-with").textContent = `you are chatting with💬💬 ${name}`;
 
   // 📦 Malo a ma message
   const messages = document.getElementById("chat-messages");
@@ -381,13 +381,13 @@ function openChat(uid, name) {
 
   // ✅ Send button pansi pa screen, pafupi ndi textarea
   const sendBtn = box.querySelector("button[onclick='sendMessage()']");
-  sendBtn.textContent = "SEND";
+  sendBtn.textContent = "SEND ↗️";
   sendBtn.style = `
     position:fixed;
     bottom:0;
     right:0;
-    width:100px;
-    height:42px;
+    width:60px;
+    height:27px;
     background:#22c55e;
     color:#fff;
     border:none;
