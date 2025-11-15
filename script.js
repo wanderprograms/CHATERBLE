@@ -176,8 +176,8 @@ window.openCommentView = function (postId) {
     <h3>Comments (<span id="comment-count-${postId}">0</span>)</h3>
     <div id="comment-list-${postId}" style="flex:1;overflow-y:auto;padding-bottom:60px;"></div>
     <div style="position:fixed;bottom:0;left:0;right:0;display:flex;border-top:1px solid #ccc;background:#fff;padding:6px;">
-      <textarea id="comment-input-${postId}" placeholder="Lemba comment..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
-      <button onclick="addComment('${postId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">Tumiza</button>
+      <textarea id="comment-input-${postId}" placeholder=" comment..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
+      <button onclick="addComment('${postId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">↗️</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -269,8 +269,8 @@ window.openReplyView = function (postId, commentId) {
     <h4>Replies</h4>
     <div id="reply-list-${commentId}" style="flex:1;overflow-y:auto;padding-bottom:60px;"></div>
     <div style="position:fixed;bottom:0;left:0;right:0;display:flex;border-top:1px solid #ccc;background:#fff;padding:6px;">
-      <textarea id="reply-input-${commentId}" placeholder="Lemba reply..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
-      <button onclick="addReply('${postId}','${commentId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">Tumiza</button>
+      <textarea id="reply-input-${commentId}" placeholder=" reply..." style="flex:1;height:42px;resize:none;padding:6px;"></textarea>
+      <button onclick="addReply('${postId}','${commentId}')" style="width:100px;background:#22c55e;color:#fff;border:none;font-weight:600;">↗️</button>
     </div>
   `;
   document.body.appendChild(panel);
@@ -381,7 +381,7 @@ function openChat(uid, name) {
 
   // ✅ Send button pansi pa screen, pafupi ndi textarea
   const sendBtn = box.querySelector("button[onclick='sendMessage()']");
-  sendBtn.textContent = "Tumiza";
+  sendBtn.textContent = "SEND";
   sendBtn.style = `
     position:fixed;
     bottom:0;
@@ -483,12 +483,12 @@ window.clearChat = function () {
   if (!sender || !receiver) return;
 
   const chatId = [sender, receiver].sort().join("_");
-  if (!confirm("Mukufuna kuchotsa ma message onse mu chat iyi?")) return;
+  if (!confirm("You want to delete all messages in this chat?")) return;
 
   rtdb.ref(`messages/${chatId}`).remove().then(() => {
     const container = document.getElementById("chat-messages");
     if (container) container.innerHTML = "";
-    alert("Chat yachotsedwa bwino ✅");
+    alert("all message deletion was successful ✅");
   });
 };
 
@@ -516,8 +516,8 @@ function listenNotifications() {
       // ✅ Dzina la sender (bold) + message + input + reply button
       li.innerHTML = `
         <p><strong>${notif.name}</strong>: ${notif.message}</p>
-        <input type="text" id="reply-${child.key}" placeholder="Yankhani pompo..." style="width:100%; margin-top:6px;" />
-        <button onclick="sendNotifReply('${notif.from}','${child.key}')" style="margin-top:4px;">✉️ Tumiza Reply</button>
+        <input type="text" id="reply-${child.key}" placeholder="reply this message..." style="width:100%; margin-top:6px;" />
+        <button onclick="sendNotifReply('${notif.from}','${child.key}')" style="margin-top:4px;">✉️ Send Reply</button>
       `;
 
       list.appendChild(li);
