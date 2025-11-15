@@ -386,8 +386,8 @@ function openChat(uid, name) {
     position:fixed;
     bottom:0;
     right:0;
-    width:60px;
-    height:27px;
+    width:80px;
+    height:37px;
     background:#22c55e;
     color:#fff;
     border:none;
